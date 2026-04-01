@@ -1,0 +1,10 @@
+.netlify
+build
+dist
+node_modules
+config/ai-provider-secrets.json
+generated-graphics/raw/*.png
+generated-graphics/processed/*.png
+logs/*.log
+*.local
+

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Broadcast Graphics</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">OBS Studio Plugin</p>
+        <h1>AI Broadcast Graphics</h1>
+        <p class="hero-copy">Generate modern static broadcast packages, tuned for Sri Lankan seasonal styling and applied directly to your live scene.</p>
+      </div>
+      <div class="season-card">
+        <span class="season-label">Current Season</span>
+        <strong id="seasonValue">Loading</strong>
+        <p id="seasonReasoning" class="season-reasoning">Waiting for AI season detection.</p>
+      </div>
+    </header>
+
+    <section class="workflow-grid">
+      <section class="control-panel">
+        <p class="eyebrow">Generation Controls</p>
+        <div class="controls">
+          <button id="generateBtn" class="primary">Generate Graphics</button>
+          <button id="processBackgroundsBtn">Process Backgrounds</button>
+          <button id="applyBtn">Apply to Scene</button>
+          <button id="refreshSeasonBtn">Refresh Season</button>
+          <button id="reloadBtn">Load Graphics</button>
+        </div>
+      </section>
+
+      <section class="prompt-panel">
+        <div class="prompt-panel-header">
+          <div>
+            <p class="eyebrow">Prompt Generation System</p>
+            <h2 class="panel-title">Generated Prompts</h2>
+          </div>
+          <span id="promptStatus" class="settings-badge">Waiting</span>
+        </div>
+        <div id="promptList" class="prompt-list"></div>
+      </section>
+    </section>
+
+    <section class="settings-panel">
+      <label class="settings-item">
+        <span>Testing Mode</span>
+        <input type="checkbox" id="testingModeToggle" checked>
+      </label>
+      <label class="settings-item">
+        <span>Season Refresh</span>
+        <select id="seasonRefreshSelect">
+          <option value="15">15 min</option>
+          <option value="30" selected>30 min</option>
+          <option value="60">60 min</option>
+        </select>
+      </label>
+      <div class="settings-badge" id="modeBadge">Static Generation Only</div>
+    </section>
+
+    <section class="settings-panel" id="browserOnlyPanel">
+      <div class="settings-item">
+        <span>Reference Uploads</span>
+        <span class="settings-help">Upload a separate reference inside each graphic card so that card uses its own layout and text structure.</span>
+      </div>
+      <button id="chooseOutputBtn" type="button">Choose Output Folder</button>
+      <div class="settings-badge" id="runtimeBadge">OBS Plugin Mode</div>
+    </section>
+
+    <section class="status-panel">
+      <div class="status-row">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Idle</span>
+      </div>
+      <div class="team-status-row">
+        <span class="eyebrow">AI Team Status</span>
+        <strong id="teamFlow">Idle</strong>
+      </div>
+      <div class="debug-grid inline-debug">
+        <div class="debug-item">
+          <span>Current Agent</span>
+          <strong id="debugProvider">none</strong>
+        </div>
+        <div class="debug-item">
+          <span>Last Task</span>
+          <strong id="debugFunction">none</strong>
+        </div>
+        <div class="debug-item">
+          <span>Status</span>
+          <strong id="debugStatus">idle</strong>
+        </div>
+        <div class="debug-item">
+          <span>Request Time</span>
+          <strong id="debugTime">0 ms</strong>
+        </div>
+      </div>
+      <div class="debug-response inline-debug-response">
+        <span>Last Agent Response</span>
+        <pre id="debugResponse"></pre>
+      </div>
+      <div id="errorBanner" class="error-banner" hidden></div>
+      <div id="activityNow" class="activity-now">No generation running.</div>
+      <div id="activityFeed" class="activity-feed"></div>
+      <pre id="logBox" class="log-box"></pre>
+    </section>
+
+    <section class="preview-grid" id="previewGrid"></section>
+  </div>
+
+  <template id="previewCardTemplate">
+    <article class="preview-card">
+      <div class="preview-media-wrap">
+        <img class="preview-media" alt="">
+      </div>
+      <div class="preview-copy">
+        <h2 class="preview-title"></h2>
+        <div class="compare-strip" hidden>
+          <div class="compare-item">
+            <span>Raw</span>
+            <img class="compare-media compare-before" alt="">
+          </div>
+          <div class="compare-item">
+            <span>Processed</span>
+            <img class="compare-media compare-after" alt="">
+          </div>
+        </div>
+        <div class="reference-upload">
+          <label class="reference-upload-label">
+            <span>Reference</span>
+            <input type="file" class="reference-input" accept=".png,.jpg,.jpeg,.webp,.gif">
+          </label>
+          <p class="reference-meta">No reference uploaded</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" class="visible-toggle">
+          <span>Visible</span>
+        </label>
+        <div class="card-actions">
+          <button type="button" class="secondary regenerate-btn">Regenerate</button>
+          <span class="card-loading" hidden>Generating...</span>
+        </div>
+        <p class="preview-meta"></p>
+      </div>
+    </article>
+  </template>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

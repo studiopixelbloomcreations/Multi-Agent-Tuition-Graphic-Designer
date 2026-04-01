@@ -1,0 +1,59 @@
+2026-04-01T18:56:40.095Z | provider=openrouter | fn=generateText | status=success | ms=21706
+2026-04-01T18:56:46.613Z | provider=openrouter | fn=generateText | status=success | ms=5898
+2026-04-01T18:56:50.612Z | provider=openrouter | fn=generateText | status=success | ms=3532
+2026-04-01T18:56:53.663Z | provider=openrouter | fn=generateText | status=success | ms=2709
+2026-04-01T18:57:00.315Z | provider=openrouter | fn=generateText | status=success | ms=6332
+2026-04-01T18:57:01.109Z | provider=openrouter | fn=generateImage | status=failure | ms=433 | error=[object Object]
+2026-04-01T18:57:48.960Z | provider=huggingface | fn=removeBackground | status=failure | ms=5 | error=Cannot read properties of undefined (reading 'generateText')
+2026-04-01T18:57:49.479Z | provider=huggingface | fn=removeBackground | status=failure | ms=1 | error=Cannot read properties of undefined (reading 'generateText')
+2026-04-01T18:57:49.889Z | provider=huggingface | fn=removeBackground | status=failure | ms=0 | error=Cannot read properties of undefined (reading 'generateText')
+2026-04-01T18:57:55.594Z | provider=huggingface | fn=generateText | status=success | ms=15567
+2026-04-01T18:58:01.967Z | provider=huggingface | fn=generateText | status=success | ms=5943
+2026-04-01T18:58:06.569Z | provider=huggingface | fn=generateText | status=success | ms=4244
+2026-04-01T18:58:09.860Z | provider=huggingface | fn=generateText | status=success | ms=2942
+2026-04-01T18:58:17.160Z | provider=huggingface | fn=generateText | status=success | ms=6961
+2026-04-01T18:58:17.915Z | provider=huggingface | fn=generateImage | status=failure | ms=440 | error=[object Object]
+2026-04-01T18:58:37.027Z | provider=huggingface | fn=removeBackground | status=failure | ms=4 | error=Cannot read properties of undefined (reading 'generateText')
+2026-04-01T18:58:37.471Z | provider=huggingface | fn=removeBackground | status=failure | ms=1 | error=Cannot read properties of undefined (reading 'generateText')
+2026-04-01T18:58:37.902Z | provider=huggingface | fn=removeBackground | status=failure | ms=0 | error=Cannot read properties of undefined (reading 'generateText')
+2026-04-01T18:59:47.687Z | provider=openrouter | fn=generateText | status=success | ms=14625
+2026-04-01T18:59:57.404Z | provider=openrouter | fn=generateText | status=success | ms=9329
+2026-04-01T19:00:04.090Z | provider=openrouter | fn=generateText | status=success | ms=6335
+2026-04-01T19:00:07.276Z | provider=openrouter | fn=generateText | status=success | ms=2846
+2026-04-01T19:00:14.530Z | provider=openrouter | fn=generateText | status=success | ms=6928
+2026-04-01T19:00:15.299Z | provider=openrouter | fn=generateImage | status=failure | ms=458 | error=[object Object]
+2026-04-01T19:05:37.758Z | provider=openrouter | fn=generateText | status=success | ms=13539
+2026-04-01T19:05:43.490Z | provider=openrouter | fn=generateText | status=success | ms=5281
+2026-04-01T19:05:48.068Z | provider=openrouter | fn=generateText | status=success | ms=4219
+2026-04-01T19:05:51.560Z | provider=openrouter | fn=generateText | status=success | ms=2937
+2026-04-01T19:05:59.231Z | provider=openrouter | fn=generateText | status=success | ms=7308
+2026-04-01T19:05:59.978Z | provider=openrouter | fn=generateImage | status=failure | ms=387 | error=400 Invalid 'prompt': string too long. Expected a string with maximum length 1000, but got a string with length 4704 instead.
+2026-04-01T19:13:25.773Z | provider=openrouter | fn=generateText | status=success | ms=6755
+2026-04-01T19:13:36.598Z | provider=openrouter | fn=generateImage | status=success | ms=10376
+2026-04-01T19:13:37.442Z | provider=openrouter | fn=removeBackground | status=failure | ms=0 | error=Cannot read properties of undefined (reading 'generateText')
+2026-04-01T19:13:37.921Z | provider=openrouter | fn=removeBackground | status=failure | ms=0 | error=Cannot read properties of undefined (reading 'generateText')
+2026-04-01T19:13:38.546Z | provider=openrouter | fn=removeBackground | status=failure | ms=0 | error=Cannot read properties of undefined (reading 'generateText')
+2026-04-01T19:13:41.474Z | provider=openrouter | fn=generateText | status=success | ms=1976
+2026-04-01T19:13:52.181Z | provider=openrouter | fn=generateImage | status=success | ms=10365
+2026-04-01T19:13:52.877Z | provider=openrouter | fn=removeBackground | status=failure | ms=1 | error=Cannot read properties of undefined (reading 'generateText')
+2026-04-01T19:13:53.215Z | provider=openrouter | fn=removeBackground | status=failure | ms=0 | error=Cannot read properties of undefined (reading 'generateText')
+2026-04-01T19:13:53.569Z | provider=openrouter | fn=removeBackground | status=failure | ms=1 | error=Cannot read properties of undefined (reading 'generateText')
+2026-04-01T19:13:57.729Z | provider=openrouter | fn=generateText | status=success | ms=3487
+2026-04-01T19:14:07.287Z | provider=openrouter | fn=generateImage | status=success | ms=9260
+2026-04-01T19:14:08.009Z | provider=openrouter | fn=removeBackground | status=failure | ms=0 | error=Cannot read properties of undefined (reading 'generateText')
+2026-04-01T19:14:08.395Z | provider=openrouter | fn=removeBackground | status=failure | ms=0 | error=Cannot read properties of undefined (reading 'generateText')
+2026-04-01T19:14:09.055Z | provider=openrouter | fn=removeBackground | status=failure | ms=1 | error=Cannot read properties of undefined (reading 'generateText')
+2026-04-01T19:14:13.102Z | provider=openrouter | fn=generateText | status=success | ms=3350
+2026-04-01T19:14:49.652Z | provider=openrouter | fn=removeBackground | status=failure | ms=2 | error=Cannot read properties of undefined (reading 'generateText')
+2026-04-01T19:14:50.290Z | provider=openrouter | fn=removeBackground | status=failure | ms=0 | error=Cannot read properties of undefined (reading 'generateText')
+2026-04-01T19:14:50.673Z | provider=openrouter | fn=removeBackground | status=failure | ms=0 | error=Cannot read properties of undefined (reading 'generateText')
+2026-04-01T19:21:18.780Z | provider=groq | fn=detectSeason | status=success | ms=2243
+2026-04-01T19:22:52.335Z | provider=groq | fn=detectSeason | status=success | ms=2344
+2026-04-01T19:22:53.993Z | provider=groq | fn=detectSeason | status=success | ms=1674
+2026-04-01T19:23:16.128Z | provider=groq | fn=generateText | status=success | ms=4839
+2026-04-01T19:23:31.024Z | provider=groq | fn=generateImage | status=success | ms=14523
+2026-04-01T19:23:35.322Z | provider=groq | fn=generateText | status=success | ms=3573
+2026-04-01T19:23:36.025Z | provider=groq | fn=generateImage | status=failure | ms=318 | error={"code":"insufficient_funds","$":"heyputer:api/APIError","message":"Available funding is insufficient for this request.","status":402}
+2026-04-01T19:24:01.467Z | provider=openrouter | fn=generateText | status=success | ms=3805
+2026-04-01T19:24:02.295Z | provider=openrouter | fn=generateImage | status=failure | ms=97 | error={"code":"insufficient_funds","$":"heyputer:api/APIError","message":"Available funding is insufficient for this request.","status":402}
+2026-04-01T19:29:29.612Z | provider=openrouter | fn=detectSeason | status=failure | ms=1 | error=openrouter is not configured for text generation. Add its API key in provider secrets before testing.
