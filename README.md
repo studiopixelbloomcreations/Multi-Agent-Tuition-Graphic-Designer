@@ -14,8 +14,9 @@ Important:
 
 - The app is now wired for direct provider integrations.
 - Real provider API keys should not be exposed in a public static frontend.
-- For production-safe AI usage on Netlify, the next recommended step is a server-side proxy using Netlify Functions.
-- Until that proxy exists, any direct browser-side provider key would be visible to the client.
+- A Netlify Functions proxy is now included for production-safe provider access.
+- On deployed Netlify, the frontend will call `/.netlify/functions/ai-provider` automatically.
+- In plain local browser testing without Netlify Functions, direct browser-side keys or injected config are still required.
 
 ### Environment variable for AI providers
 
@@ -45,6 +46,10 @@ The value should be a JSON object containing all provider API keys:
 }
 ```
 
+Set that exact JSON string in Netlify as:
+
+- `AI_PROVIDER_KEYS_JSON`
+
 Model selection is automatic.
 
 The system now chooses the provider models internally based on task type and provider capability:
@@ -65,9 +70,9 @@ The system now chooses the provider models internally based on task type and pro
 ### What I need from you to make the AIs work
 
 - one `AI_PROVIDER_KEYS_JSON` value containing the provider keys you want enabled
-- confirmation on whether you want:
-  - browser-only testing with exposed client-side keys, or
-  - proper Netlify Functions proxy setup so the keys stay private
+- if you are testing locally without Netlify Functions, either:
+  - inject the same JSON into the browser runtime, or
+  - use browser-side local secrets for temporary testing
 
 ### Hugging Face token
 
@@ -253,3 +258,9 @@ In the web app:
 - optionally choose an output folder in Chrome or Edge
 - generated state is stored in browser local storage
 - generated assets stay available in preview cards and the output folder for manual import into OBS
+
+Important for local testing:
+
+- a plain `python -m http.server` session does not automatically read Netlify environment variables
+- Netlify environment variables work when deployed on Netlify through the included function proxy
+- for local non-Netlify browser testing, the app will fall back to browser-side secrets if you provide them

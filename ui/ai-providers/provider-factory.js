@@ -1,5 +1,7 @@
 import { getProviderSecret } from "../services/provider-secrets.js";
 
+const NETLIFY_PROXY_PATH = "/.netlify/functions/ai-provider";
+
 function withTimeout(promise, label, ms = 45000) {
   return Promise.race([
     promise,
@@ -67,6 +69,68 @@ async function postJson(url, body, headers = {}) {
   }
 
   return payload;
+}
+
+async function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function serializeProviderOptions(options = {}) {
+  const next = { ...options };
+  if (next.media instanceof File) {
+    next.mediaName = next.media.name;
+    next.mediaType = next.media.type;
+    next.media = await fileToDataUrl(next.media);
+  }
+  return next;
+}
+
+async function tryProxy(providerId, functionName, payload, options = {}) {
+  const serializedOptions = await serializeProviderOptions(options);
+  let response;
+  try {
+    response = await fetch(NETLIFY_PROXY_PATH, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        providerId,
+        functionName,
+        payload,
+        options: serializedOptions,
+      }),
+    });
+  } catch (error) {
+    const proxyError = new Error(`Proxy unavailable: ${error.message || String(error)}`);
+    proxyError.code = "PROXY_UNAVAILABLE";
+    throw proxyError;
+  }
+
+  if (response.status === 404) {
+    const proxyError = new Error("Proxy unavailable: Netlify function not found.");
+    proxyError.code = "PROXY_UNAVAILABLE";
+    throw proxyError;
+  }
+
+  const text = await response.text();
+  let body = {};
+  try {
+    body = text ? JSON.parse(text) : {};
+  } catch {
+    body = { error: text || "Unknown proxy response." };
+  }
+
+  if (!response.ok || body?.ok === false) {
+    throw new Error(body?.error || body?.message || `${response.status} ${text}`);
+  }
+
+  return body.result;
 }
 
 function buildOpenRouter(providerId) {
@@ -219,7 +283,7 @@ function buildHuggingFace(providerId) {
   };
 }
 
-export function createProviderModule(providerId) {
+function createDirectProvider(providerId) {
   if (providerId === "openrouter") {
     return buildOpenRouter(providerId);
   }
@@ -261,4 +325,43 @@ export function createProviderModule(providerId) {
   }
 
   throw new Error(`Unsupported provider: ${providerId}`);
+}
+
+function createProxyFirstProvider(providerId) {
+  const directProvider = createDirectProvider(providerId);
+
+  async function run(functionName, payload, options = {}) {
+    try {
+      return await withTimeout(
+        tryProxy(providerId, functionName, payload, options),
+        `${providerId} ${functionName} proxy`,
+      );
+    } catch (error) {
+      if (error?.code !== "PROXY_UNAVAILABLE") {
+        throw error;
+      }
+      const directTarget = directProvider[functionName];
+      return directTarget.call(directProvider, payload, options);
+    }
+  }
+
+  return {
+    id: providerId,
+    async generateText(prompt, options = {}) {
+      return run("generateText", prompt, options);
+    },
+    async generateImage(prompt, options = {}) {
+      return run("generateImage", prompt, options);
+    },
+    async removeBackground(payload, options = {}) {
+      return run("removeBackground", payload, options);
+    },
+    async detectSeason(prompt, options = {}) {
+      return run("detectSeason", prompt, options);
+    },
+  };
+}
+
+export function createProviderModule(providerId) {
+  return createProxyFirstProvider(providerId);
 }
