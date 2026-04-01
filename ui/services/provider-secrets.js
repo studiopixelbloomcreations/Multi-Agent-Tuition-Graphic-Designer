@@ -4,7 +4,7 @@ const ENV_BLOB_KEY = "AI_PROVIDER_KEYS_JSON";
 const AUTO_MODELS = {
   openrouter: {
     textModel: "openai/gpt-4.1-mini",
-    imageModel: "google/gemini-2.5-flash-image-preview",
+    imageModel: "google/gemini-2.5-flash-image",
   },
   groq: {
     textModel: "openai/gpt-oss-20b",

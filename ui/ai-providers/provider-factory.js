@@ -241,7 +241,7 @@ function buildHuggingFace(providerId) {
     async generateText(prompt) {
       const config = ensureConfigured(providerId, "text generation");
       const payload = await withTimeout(postJson(
-        `https://api-inference.huggingface.co/models/${config.textModel}`,
+        `https://router.huggingface.co/hf-inference/models/${config.textModel}`,
         {
           inputs: prompt,
         },
@@ -261,7 +261,7 @@ function buildHuggingFace(providerId) {
         throw new Error(`${providerId} image generation is not configured yet.`);
       }
       const response = await withTimeout(fetch(
-        `https://api-inference.huggingface.co/models/${config.imageModel}`,
+        `https://router.huggingface.co/hf-inference/models/${config.imageModel}`,
         {
           method: "POST",
           headers: {

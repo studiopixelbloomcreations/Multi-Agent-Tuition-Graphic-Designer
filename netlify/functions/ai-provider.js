@@ -1,7 +1,7 @@
 const AUTO_MODELS = {
   openrouter: {
     textModel: "openai/gpt-4.1-mini",
-    imageModel: "google/gemini-2.5-flash-image-preview",
+    imageModel: "google/gemini-2.5-flash-image",
   },
   groq: {
     textModel: "openai/gpt-oss-20b",
@@ -187,7 +187,7 @@ async function chatProviderText(providerId, url) {
 async function huggingFaceGenerateText(prompt) {
   const config = ensureConfigured("huggingface", "text generation");
   const payload = await postJson(
-    `https://api-inference.huggingface.co/models/${config.textModel}`,
+    `https://router.huggingface.co/hf-inference/models/${config.textModel}`,
     {
       inputs: prompt,
     },
@@ -206,7 +206,7 @@ async function huggingFaceGenerateImage(prompt) {
   if (!config.imageModel) {
     throw new Error("huggingface image generation is not configured.");
   }
-  const response = await fetch(`https://api-inference.huggingface.co/models/${config.imageModel}`, {
+  const response = await fetch(`https://router.huggingface.co/hf-inference/models/${config.imageModel}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${config.apiKey}`,

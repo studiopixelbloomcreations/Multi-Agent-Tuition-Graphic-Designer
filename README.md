@@ -56,7 +56,7 @@ The system now chooses the provider models internally based on task type and pro
 
 - OpenRouter
   - text: `openai/gpt-4.1-mini`
-  - image: `google/gemini-2.5-flash-image-preview`
+  - image: `google/gemini-2.5-flash-image`
 - Groq
   - text: `openai/gpt-oss-20b`
 - Mistral
