@@ -1,4 +1,5 @@
 const STORAGE_KEY = "obs-ai-broadcast-graphics.provider-secrets";
+const ENV_BLOB_KEY = "AI_PROVIDER_KEYS_JSON";
 
 const AUTO_MODELS = {
   openrouter: {
@@ -33,19 +34,43 @@ const DEFAULTS = Object.fromEntries(
   ]),
 );
 
+function parseSecretsBlob(raw) {
+  if (!raw) return {};
+  if (typeof raw === "object") {
+    return raw;
+  }
+  if (typeof raw !== "string") {
+    return {};
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+function loadProviderSecretsFromEnvironment() {
+  const globalRaw =
+    globalThis.__AI_PROVIDER_KEYS_JSON__
+    || globalThis[ENV_BLOB_KEY]
+    || globalThis.__APP_CONFIG__?.AI_PROVIDER_KEYS_JSON
+    || globalThis.__APP_CONFIG__?.aiProviderKeysJson
+    || "";
+  return parseSecretsBlob(globalRaw);
+}
+
 export function loadProviderSecrets() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return DEFAULTS;
-    }
-    const parsed = JSON.parse(raw);
+    const parsed = raw ? JSON.parse(raw) : {};
+    const envParsed = loadProviderSecretsFromEnvironment();
     return Object.fromEntries(
       Object.keys(DEFAULTS).map((providerId) => [
         providerId,
         {
           ...DEFAULTS[providerId],
           ...(parsed?.[providerId] || {}),
+          ...(envParsed?.[providerId] || {}),
           ...AUTO_MODELS[providerId],
         },
       ]),

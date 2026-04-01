@@ -123,7 +123,18 @@ export async function detectSeason() {
     "If no strong seasonal signal exists, use Default.",
   ].join(" ");
 
-  const completion = (await executeAgentTask(TASK_TYPES.seasonDetection, prompt, { taskLabel: "season detection" })).result;
+  let completion;
+  try {
+    completion = (await executeAgentTask(TASK_TYPES.seasonDetection, prompt, { taskLabel: "season detection" })).result;
+  } catch (error) {
+    if (calendarSeason) {
+      return {
+        season: calendarSeason.season,
+        reasoning: `${calendarSeason.reasoning} AI season analysis was unavailable, so the Sri Lankan calendar fallback was applied. Root error: ${error.message || String(error)}`,
+      };
+    }
+    throw error;
+  }
   const parsed = parseJsonSafely(extractText(completion?.text || completion), null);
   if (parsed?.season) {
     const aiSeason = normalizeSeason(parsed.season);
@@ -153,16 +164,27 @@ export async function detectSeason() {
     };
   }
 
-  const backupCompletion = (await executeAgentTask(
-    TASK_TYPES.seasonDetection,
-    [
-      "Return only one value from this list for Sri Lanka right now:",
-      "Avurudu, Vesak, Kite Season, Default.",
-      `Today's date in Sri Lanka is ${today}.`,
-      "No explanation, no JSON, one value only.",
-    ].join(" "),
-    { taskLabel: "season detection fallback" },
-  )).result;
+  let backupCompletion;
+  try {
+    backupCompletion = (await executeAgentTask(
+      TASK_TYPES.seasonDetection,
+      [
+        "Return only one value from this list for Sri Lanka right now:",
+        "Avurudu, Vesak, Kite Season, Default.",
+        `Today's date in Sri Lanka is ${today}.`,
+        "No explanation, no JSON, one value only.",
+      ].join(" "),
+      { taskLabel: "season detection fallback" },
+    )).result;
+  } catch (error) {
+    if (calendarSeason) {
+      return {
+        season: calendarSeason.season,
+        reasoning: `${calendarSeason.reasoning} Backup AI season analysis was unavailable, so the Sri Lankan calendar fallback was applied. Root error: ${error.message || String(error)}`,
+      };
+    }
+    throw error;
+  }
   const backupSeason = normalizeSeason(extractText(backupCompletion?.text || backupCompletion));
   if (calendarSeason && backupSeason === "Default") {
     return {
