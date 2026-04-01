@@ -11,6 +11,13 @@ let runtime = {
   savePerformance: async () => {},
 };
 
+function nowMs() {
+  if (typeof globalThis.performance?.now === "function") {
+    return globalThis.performance.now();
+  }
+  return Date.now();
+}
+
 export function configureAIOrchestratorRuntime(overrides = {}) {
   runtime = {
     ...runtime,
@@ -51,8 +58,8 @@ function emitFlow(update) {
 
 export async function executeAgentTask(taskType, payload, options = {}) {
   const preferredProviders = TASK_PREFERENCES[taskType] || [];
-  const performance = await loadPerformanceSnapshot();
-  const candidates = sortProvidersByPerformance(taskType, preferredProviders, performance)
+  const performanceSnapshot = await loadPerformanceSnapshot();
+  const candidates = sortProvidersByPerformance(taskType, preferredProviders, performanceSnapshot)
     .filter((providerId) => AGENT_REGISTRY[providerId]?.tasks.includes(taskType));
 
   if (!candidates.length) {
@@ -65,7 +72,7 @@ export async function executeAgentTask(taskType, payload, options = {}) {
 
   let lastError = null;
   for (const providerId of candidates) {
-    const startedAt = performance.now();
+    const startedAt = nowMs();
     const fn = providerFunctionForTask(taskType);
     flow.push(providerId);
     emitFlow({
@@ -79,7 +86,7 @@ export async function executeAgentTask(taskType, payload, options = {}) {
 
     try {
       const result = await callSpecificAIProvider(providerId, fn, payload, options.providerOptions || {});
-      const durationMs = Math.round(performance.now() - startedAt);
+      const durationMs = Math.round(nowMs() - startedAt);
       await recordPerformance(taskType, providerId, "success", durationMs);
       const teamStatus = {
         taskType,
@@ -107,7 +114,7 @@ export async function executeAgentTask(taskType, payload, options = {}) {
         flow: teamStatus.flow,
       };
     } catch (error) {
-      const durationMs = Math.round(performance.now() - startedAt);
+      const durationMs = Math.round(nowMs() - startedAt);
       await recordPerformance(taskType, providerId, "failure", durationMs);
       lastError = error;
       emitFlow({

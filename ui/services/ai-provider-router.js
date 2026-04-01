@@ -18,6 +18,13 @@ let runtime = {
   onDebug: () => {},
 };
 
+function nowMs() {
+  if (typeof globalThis.performance?.now === "function") {
+    return globalThis.performance.now();
+  }
+  return Date.now();
+}
+
 export function configureAIProviderRuntime(overrides = {}) {
   runtime = {
     ...runtime,
@@ -60,7 +67,7 @@ export function getProviderModule(providerId) {
 }
 
 export async function callSpecificAIProvider(providerId, functionName, ...args) {
-  const startedAt = performance.now();
+  const startedAt = nowMs();
   const module = getProviderModule(providerId);
   const target = module?.[functionName];
   if (typeof target !== "function") {
@@ -69,7 +76,7 @@ export async function callSpecificAIProvider(providerId, functionName, ...args) 
 
   try {
     const response = await target.call(module, ...args);
-    const requestTimeMs = Math.round(performance.now() - startedAt);
+    const requestTimeMs = Math.round(nowMs() - startedAt);
     const debug = {
       providerId,
       lastFunction: functionName,
@@ -83,7 +90,7 @@ export async function callSpecificAIProvider(providerId, functionName, ...args) 
     runtime.onDebug(debug);
     return response;
   } catch (error) {
-    const requestTimeMs = Math.round(performance.now() - startedAt);
+    const requestTimeMs = Math.round(nowMs() - startedAt);
     const message = extractErrorMessage(error);
     const debug = {
       providerId,
