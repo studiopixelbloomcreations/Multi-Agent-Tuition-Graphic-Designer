@@ -64,6 +64,16 @@ function extractText(result) {
   return "";
 }
 
+function extractOpenRouterImageDataUrl(payload) {
+  const message = payload?.choices?.[0]?.message || {};
+  const image =
+    message?.images?.[0]?.image_url?.url
+    || message?.images?.[0]?.imageUrl?.url
+    || message?.content?.find?.((item) => item?.type === "image_url")?.image_url?.url
+    || "";
+  return image || "";
+}
+
 function summarizeUnknown(value) {
   if (!value) return "";
   if (typeof value === "string") return value;
@@ -133,19 +143,21 @@ async function openrouterGenerateImage(prompt) {
     throw new Error("openrouter image generation is not configured.");
   }
   const payload = await postJson(
-    "https://openrouter.ai/api/v1/images/generations",
+    "https://openrouter.ai/api/v1/chat/completions",
     {
       model: config.imageModel,
-      prompt,
-      size: "1024x1024",
+      messages: [{ role: "user", content: prompt }],
+      modalities: ["image", "text"],
+      image_config: {
+        image_size: "1K",
+        aspect_ratio: "16:9",
+      },
     },
     {
       Authorization: `Bearer ${config.apiKey}`,
     },
   );
-  const dataUrl = payload?.data?.[0]?.b64_json
-    ? `data:image/png;base64,${payload.data[0].b64_json}`
-    : payload?.data?.[0]?.url || "";
+  const dataUrl = extractOpenRouterImageDataUrl(payload);
   if (!dataUrl) {
     throw new Error("No image returned by openrouter.");
   }
