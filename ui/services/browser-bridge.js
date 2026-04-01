@@ -395,7 +395,7 @@ export class BrowserBridge {
   }
 
   async applyToScene() {
-    return toResponse(true, "Browser mode only: generated graphics stay in the existing preview cards until OBS plugin mode is used.");
+    return toResponse(true, "Web app mode: generated graphics are ready in the output folder and preview cards for manual use in OBS.");
   }
 
   async setGraphicVisibility(graphicId, visible) {

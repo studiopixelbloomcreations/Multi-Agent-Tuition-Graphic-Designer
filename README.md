@@ -1,14 +1,14 @@
-# OBS AI Broadcast Graphics
+# AI Broadcast Graphics
 
-Professional OBS Studio plugin scaffold for AI-powered static broadcast graphics generation, management, and scene integration.
+Professional web app for AI-powered static broadcast graphics generation, management, and export for manual use in OBS Studio.
 
-## Netlify Deployment
+## Web App Deployment
 
-This repository can be deployed to Netlify as a browser test app.
+This repository is now intended to run as a full web app.
 
 - Publish directory: `ui`
 - Config file: `netlify.toml`
-- Current deployment mode: static frontend
+- Current deployment mode: static frontend web app
 
 Important:
 
@@ -17,63 +17,94 @@ Important:
 - For production-safe AI usage on Netlify, the next recommended step is a server-side proxy using Netlify Functions.
 - Until that proxy exists, any direct browser-side provider key would be visible to the client.
 
-### Environment variables you will need for AI providers
+### Environment variable for AI providers
 
-If we move provider calls behind Netlify Functions, these are the environment variables to set in Netlify:
+If we move provider calls behind Netlify Functions, use one single environment variable:
 
-- `OPENROUTER_API_KEY`
-- `OPENROUTER_TEXT_MODEL`
-- `OPENROUTER_IMAGE_MODEL`
-- `GROQ_API_KEY`
-- `GROQ_TEXT_MODEL`
-- `MISTRAL_API_KEY`
-- `MISTRAL_TEXT_MODEL`
-- `HUGGINGFACE_API_KEY`
-- `HUGGINGFACE_TEXT_MODEL`
-- `HUGGINGFACE_IMAGE_MODEL`
-- `DEEPSEEK_API_KEY`
-- `DEEPSEEK_TEXT_MODEL`
+- `AI_PROVIDER_KEYS_JSON`
 
-Suggested starting values:
+The value should be a JSON object containing all provider API keys:
 
-- `OPENROUTER_TEXT_MODEL=openai/gpt-4.1-mini`
-- `OPENROUTER_IMAGE_MODEL=google/gemini-2.5-flash-image-preview`
-- `GROQ_TEXT_MODEL=openai/gpt-oss-20b`
-- `MISTRAL_TEXT_MODEL=mistral-small-latest`
-- `HUGGINGFACE_TEXT_MODEL=Qwen/Qwen2.5-7B-Instruct`
-- `HUGGINGFACE_IMAGE_MODEL=black-forest-labs/FLUX.1-schnell`
-- `DEEPSEEK_TEXT_MODEL=deepseek-chat`
+```json
+{
+  "openrouter": {
+    "apiKey": "YOUR_OPENROUTER_KEY"
+  },
+  "groq": {
+    "apiKey": "YOUR_GROQ_KEY"
+  },
+  "mistral": {
+    "apiKey": "YOUR_MISTRAL_KEY"
+  },
+  "huggingface": {
+    "apiKey": "YOUR_HUGGING_FACE_TOKEN"
+  },
+  "deepseek": {
+    "apiKey": "YOUR_DEEPSEEK_KEY"
+  }
+}
+```
+
+Model selection is automatic.
+
+The system now chooses the provider models internally based on task type and provider capability:
+
+- OpenRouter
+  - text: `openai/gpt-4.1-mini`
+  - image: `google/gemini-2.5-flash-image-preview`
+- Groq
+  - text: `openai/gpt-oss-20b`
+- Mistral
+  - text: `mistral-small-latest`
+- Hugging Face
+  - text: `Qwen/Qwen2.5-7B-Instruct`
+  - image: `black-forest-labs/FLUX.1-schnell`
+- DeepSeek
+  - text: `deepseek-chat`
 
 ### What I need from you to make the AIs work
 
-- your API key for each provider you want enabled
+- one `AI_PROVIDER_KEYS_JSON` value containing the provider keys you want enabled
 - confirmation on whether you want:
   - browser-only testing with exposed client-side keys, or
   - proper Netlify Functions proxy setup so the keys stay private
 
+### Hugging Face token
+
+Yes, for Hugging Face what I need is your Hugging Face access token.
+
+Use a Hugging Face User Access Token with inference access. In most cases:
+
+- `Read` access is needed for hosted model access
+- if you use gated models, the token must also have permission to that model
+
+For this project, the Hugging Face token goes inside:
+
+```json
+{
+  "huggingface": {
+    "apiKey": "hf_xxxxxxxxxxxxxxxxxxxx"
+  }
+}
+```
+
 ## Systems implemented
 
-### AI Provider Control System (APCS)
+### AI Harmony System (AHS)
 
-- Central provider config at `config/ai-provider.json`
-- Supported manual provider order:
+- Multi-agent orchestrator automatically assigns tasks across:
   - `openrouter`
   - `groq`
   - `mistral`
   - `huggingface`
   - `deepseek`
-- Only one provider is active at a time
-- No automatic fallback or switching
-- Manual switch button in the UI cycles to the next provider in order
+- No manual provider switching in the main workflow
+- Automatic failover to the next best provider when a task fails
+- Performance preferences stored in `config/ai-performance.json`
+- Team flow and debug details are shown inside the main monitor
 - Provider request logging is written to:
   - `logs/ai-provider.log`
   - and mirrored to the chosen browser output folder when available
-- Debug panel shows:
-  - current provider
-  - last function called
-  - last status
-  - request time
-  - last API response excerpt
 
 ### 1. Graphics Creation System (GCS)
 
@@ -89,7 +120,7 @@ Suggested starting values:
 
 ### 2. Prompt Generation System (PGS)
 
-- Uses Puter.js LLM calls to generate high-detail broadcast prompts
+- Uses the AI Harmony System text agents to generate high-detail broadcast prompts
 - Injects:
   - season
   - graphic type
@@ -103,7 +134,7 @@ Suggested starting values:
 
 ### 3. Season Detection System (SDS)
 
-- Uses Puter.js chat completions rather than external season APIs
+- Uses the AI Harmony System text agents rather than external season APIs
 - Returns one of:
   - `Avurudu`
   - `Vesak`
@@ -114,43 +145,42 @@ Suggested starting values:
   - periodic automatic refresh on a timer
 - Stores season reasoning and last-check metadata
 
-### 4. OBS Integration System
+### 4. Manual OBS Workflow
 
-- Native OBS frontend plugin in C++
-- Registers a custom dock inside OBS
-- Applies generated files as OBS `image_source` entries
-- Positions assets automatically:
-  - lower thirds at bottom left
-  - badge at top right
-  - banner across bottom width
-- Allows visibility toggling for each generated source
+- Generate graphics in the web app
+- Save them to the selected output folder
+- Import them manually into OBS as image sources
+- Use the built-in preview cards to verify the generated assets before loading them into OBS
 
-### 5. AI Provider Router Layer
+### 5. AI Orchestrator Layer
 
-All AI communication now goes through a strict single-provider router.
+All AI communication now goes through the harmony orchestrator.
 
-- Router:
+- Orchestrator:
+  - `ui/ai-orchestrator/orchestrator.js`
+- Agent registry:
+  - `ui/ai-orchestrator/agent-registry.js`
+- Performance store:
+  - `ui/ai-orchestrator/performance-store.js`
+- Router/runtime:
   - `ui/services/ai-provider-router.js`
-- Provider modules:
-  - `ui/ai-providers/openrouter.js`
-  - `ui/ai-providers/groq.js`
-  - `ui/ai-providers/mistral.js`
-  - `ui/ai-providers/huggingface.js`
-  - `ui/ai-providers/deepseek.js`
+- Provider factory:
+  - `ui/ai-providers/provider-factory.js`
 
-Each provider module implements the same functions:
+Each provider module exposes the same task surface:
 
 - `generateText(prompt)`
 - `generateImage(prompt)`
 - `removeBackground(image)`
 - `detectSeason()`
 
-The active provider is read before every AI request so all subsystems stay locked to a single provider at a time:
+The orchestrator chooses the best provider automatically for:
 
 - SDS
 - PGS
 - GCS
 - BRS
+- quality review
 
 ### 6. Testing Mode
 
@@ -162,38 +192,29 @@ The active provider is read before every AI request so all subsystems stay locke
 
 ## Architecture
 
-### Native layer
-
-- [src/plugin-main.cpp](C:/Users/thenu/Downloads/Livestream%20app%20V2/src/plugin-main.cpp)
-  - OBS module entry point and dock registration
-- [src/ai-graphics-dock.cpp](C:/Users/thenu/Downloads/Livestream%20app%20V2/src/ai-graphics-dock.cpp)
-  - Embedded `QWebEngineView` host
-- [src/ai-graphics-bridge.cpp](C:/Users/thenu/Downloads/Livestream%20app%20V2/src/ai-graphics-bridge.cpp)
-  - `QWebChannel` bridge for persistence and OBS operations
-- [src/obs-graphics-manager.cpp](C:/Users/thenu/Downloads/Livestream%20app%20V2/src/obs-graphics-manager.cpp)
-  - OBS source creation, update, placement, and visibility control
-
 ### Web layer
 
 - [ui/app.js](C:/Users/thenu/Downloads/Livestream%20app%20V2/ui/app.js)
-  - Dock controller and UI orchestration
+  - Web app controller and UI orchestration
 - [ui/config.js](C:/Users/thenu/Downloads/Livestream%20app%20V2/ui/config.js)
-  - Graphics registry, model preferences, quality thresholds
-- [ui/services/puter-service.js](C:/Users/thenu/Downloads/Livestream%20app%20V2/ui/services/puter-service.js)
-  - Puter.js-backed SDS, PGS, GCS, and AI review functions
+  - Graphics registry and quality thresholds
+- [ui/services/ai-service.js](C:/Users/thenu/Downloads/Livestream%20app%20V2/ui/services/ai-service.js)
+  - Harmony-orchestrated SDS, PGS, GCS, BRS, and quality review functions
 - [ui/services/graphics-pipeline.js](C:/Users/thenu/Downloads/Livestream%20app%20V2/ui/services/graphics-pipeline.js)
   - Generation and review pipeline orchestration
+- [ui/services/browser-bridge.js](C:/Users/thenu/Downloads/Livestream%20app%20V2/ui/services/browser-bridge.js)
+  - Browser persistence, output-folder integration, and exported asset handling
 - [ui/index.html](C:/Users/thenu/Downloads/Livestream%20app%20V2/ui/index.html)
-  - Dock markup
+  - Web app markup
 - [ui/styles.css](C:/Users/thenu/Downloads/Livestream%20app%20V2/ui/styles.css)
-  - Dark dock design
+  - Dark app design
 
 ## Quality enforcement
 
 The plugin now uses a review loop before saving a generated asset:
 
-1. Generate image via Puter.js
-2. Send result back through Puter.js for quality review
+1. Generate image via the AI Harmony System
+2. Send result back through the AI Harmony System for quality review
 3. Reject low-scoring outputs
 4. Retry generation up to the configured attempt limit
 5. Save only approved results
@@ -206,34 +227,13 @@ Checks target:
 - no distorted pseudo-text
 - no visible weird artifacts
 
-## Build requirements
-
-This repository still needs a real OBS plugin build environment:
-
-- OBS Studio SDK / frontend API
-- `libobs`
-- Qt 6:
-  - Core
-  - Gui
-  - Widgets
-  - WebEngineWidgets
-  - WebChannel
-- CMake
-
-Example:
-
-```powershell
-cmake -S . -B build
-cmake --build build --config Release
-```
-
 ## Current limitation
 
-Animations are intentionally not implemented yet. The project is structured so a future animation engine can be added without replacing the current dock, manifest model, or OBS integration layer.
+Animations are intentionally not implemented yet. The project is structured so a future animation engine can be added without replacing the current web app workflow, manifest model, or output pipeline.
 
-## Browser local test mode
+## Local run
 
-The dock app can now run outside OBS for faster iteration.
+The project now runs as a normal browser-based web app.
 
 From the project root:
 
@@ -247,9 +247,9 @@ Then open:
 http://127.0.0.1:8080/ui/
 ```
 
-In browser mode:
+In the web app:
 
-- upload inspiration references with the `Inspiration Graphics` file picker
+- upload reference images inside each graphic card
 - optionally choose an output folder in Chrome or Edge
 - generated state is stored in browser local storage
-- `Apply to Scene` is mocked until the OBS plugin build is used
+- generated assets stay available in preview cards and the output folder for manual import into OBS

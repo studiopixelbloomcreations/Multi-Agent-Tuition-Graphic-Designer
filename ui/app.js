@@ -14,7 +14,7 @@ const state = {
   testingMode: true,
   seasonRefreshMinutes: 30,
   seasonTimerId: null,
-  runtimeMode: "obs",
+  runtimeMode: "browser",
   outputDirectoryName: "",
   promptMap: {},
   activityFeed: [],
@@ -572,20 +572,8 @@ function loadQWebChannelScript() {
 }
 
 async function connectBridge() {
-  if (!window.qt?.webChannelTransport) {
-    state.runtimeMode = "browser";
-    state.bridge = await createBrowserBridge();
-    return;
-  }
-
-  await loadQWebChannelScript();
-  return new Promise((resolve) => {
-    new QWebChannel(qt.webChannelTransport, (channel) => {
-      state.bridge = channel.objects.obsBridge;
-      state.runtimeMode = "obs";
-      resolve();
-    });
-  });
+  state.runtimeMode = "browser";
+  state.bridge = await createBrowserBridge();
 }
 
 async function bootstrap() {

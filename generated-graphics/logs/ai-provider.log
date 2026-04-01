@@ -57,3 +57,4 @@
 2026-04-01T19:24:01.467Z | provider=openrouter | fn=generateText | status=success | ms=3805
 2026-04-01T19:24:02.295Z | provider=openrouter | fn=generateImage | status=failure | ms=97 | error={"code":"insufficient_funds","$":"heyputer:api/APIError","message":"Available funding is insufficient for this request.","status":402}
 2026-04-01T19:29:29.612Z | provider=openrouter | fn=detectSeason | status=failure | ms=1 | error=openrouter is not configured for text generation. Add its API key in provider secrets before testing.
+2026-04-01T19:59:40.042Z | provider=groq | fn=detectSeason | status=failure | ms=182 | error=groq is not configured for text generation. Add its API key in provider secrets before testing.

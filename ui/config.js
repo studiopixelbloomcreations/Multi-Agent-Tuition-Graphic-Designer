@@ -5,15 +5,6 @@ export const GRAPHICS = [
   { id: "institution-banner", label: "Institution Banner", type: "institution banner" },
 ];
 
-export const AI_MODELS = {
-  season: "gpt-5.4-nano",
-  prompts: "gpt-5.4-nano",
-  imagePrimary: "gemini-2.5-flash-image-preview",
-  imageFallback: "gemini-2.5-flash-image-preview",
-  review: "gpt-5.4-nano",
-  backgroundAnalysis: "gpt-5.4-nano",
-};
-
 export const QUALITY_POLICY = {
   minimumScore: 80,
   maxAttempts: 3,
