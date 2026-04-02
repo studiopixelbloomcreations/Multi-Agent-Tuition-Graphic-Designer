@@ -20,7 +20,7 @@ const AUTO_MODELS = {
   huggingface: {
     textModel: "Qwen/Qwen2.5-7B-Instruct",
     imageModel: "black-forest-labs/FLUX.1-schnell",
-    imageTransformModel: "black-forest-labs/FLUX.1-Kontext-dev",
+    imageTransformModel: "Qwen/Qwen-Image-Edit",
   },
   deepseek: {
     textModel: "deepseek-chat",

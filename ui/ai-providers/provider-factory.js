@@ -48,10 +48,13 @@ function summarizeUnknown(value) {
   }
 }
 
-function toBase64Payload(dataUrl) {
-  const text = String(dataUrl || "");
-  const marker = text.indexOf(",");
-  return marker >= 0 ? text.slice(marker + 1) : text;
+let hfInferenceModulePromise = null;
+
+async function getHFInferenceModule() {
+  if (!hfInferenceModulePromise) {
+    hfInferenceModulePromise = import("https://cdn.jsdelivr.net/npm/@huggingface/inference@4.13.15/+esm");
+  }
+  return hfInferenceModulePromise;
 }
 
 function ensureConfigured(providerId, capability) {
@@ -310,31 +313,19 @@ function buildHuggingFace(providerId) {
       if (!modelId) {
         throw new Error(`${providerId} image-to-image transformation is not configured yet.`);
       }
-      const response = await withTimeout(fetch(
-        `https://router.huggingface.co/hf-inference/models/${modelId}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${config.apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            inputs: toBase64Payload(inputImage),
-            parameters: {
-              prompt,
-              negative_prompt: payload?.negativePrompt || "do not alter layout, do not move elements, do not distort shapes, no warped text, no broken alignment, no extra objects",
-              guidance_scale: Number(payload?.guidanceScale) || 5,
-              num_inference_steps: Number(payload?.numInferenceSteps) || 28,
-              strength: Number(payload?.strength) || 0.2,
-            },
-          }),
+      const { InferenceClient } = await getHFInferenceModule();
+      const client = new InferenceClient(config.apiKey);
+      const blob = await withTimeout(client.imageToImage({
+        provider: "fal-ai",
+        model: modelId,
+        inputs: await (await fetch(inputImage)).blob(),
+        parameters: {
+          prompt,
+          negative_prompt: payload?.negativePrompt || "do not alter layout, do not move elements, do not distort shapes, no warped text, no broken alignment, no extra objects",
+          guidance_scale: Number(payload?.guidanceScale) || 5,
+          num_inference_steps: Number(payload?.numInferenceSteps) || 28,
         },
-      ), `${providerId} transformImage`);
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`${response.status} ${text}`);
-      }
-      const blob = await response.blob();
+      }), `${providerId} transformImage`);
       const dataUrl = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(String(reader.result || ""));
@@ -343,7 +334,7 @@ function buildHuggingFace(providerId) {
       });
       return {
         dataUrl,
-        raw: { size: blob.size, type: blob.type, mode: "image-to-image", modelId },
+        raw: { size: blob.size, type: blob.type, mode: "image-to-image", modelId, provider: "fal-ai" },
       };
     },
 

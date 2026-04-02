@@ -1,0 +1,8 @@
+{
+  "name": "multi-agent-tuition-graphic-designer",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "@huggingface/inference": "^4.13.15"
+  }
+}

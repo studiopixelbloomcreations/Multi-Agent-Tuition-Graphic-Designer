@@ -17,7 +17,7 @@ const AUTO_MODELS = {
   huggingface: {
     textModel: "Qwen/Qwen2.5-7B-Instruct",
     imageModel: "black-forest-labs/FLUX.1-schnell",
-    imageTransformModel: "black-forest-labs/FLUX.1-Kontext-dev",
+    imageTransformModel: "Qwen/Qwen-Image-Edit",
   },
   deepseek: {
     textModel: "deepseek-chat",
@@ -91,10 +91,13 @@ function summarizeUnknown(value) {
   }
 }
 
-function toBase64Payload(dataUrl) {
-  const text = String(dataUrl || "");
-  const marker = text.indexOf(",");
-  return marker >= 0 ? text.slice(marker + 1) : text;
+let hfInferenceModulePromise = null;
+
+async function getHFInferenceModule() {
+  if (!hfInferenceModulePromise) {
+    hfInferenceModulePromise = import("@huggingface/inference");
+  }
+  return hfInferenceModulePromise;
 }
 
 async function postJson(url, body, headers = {}) {
@@ -248,32 +251,24 @@ async function huggingFaceTransformImage(payload) {
   if (!modelId) {
     throw new Error("huggingface image-to-image transformation is not configured.");
   }
-  const response = await fetch(`https://router.huggingface.co/hf-inference/models/${modelId}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${config.apiKey}`,
-      "Content-Type": "application/json",
+  const { InferenceClient } = await getHFInferenceModule();
+  const client = new InferenceClient(config.apiKey);
+  const response = await client.imageToImage({
+    provider: "fal-ai",
+    model: modelId,
+    inputs: await (await fetch(inputImage)).blob(),
+    parameters: {
+      prompt,
+      negative_prompt: payload?.negativePrompt || "do not alter layout, do not move elements, do not distort shapes, no warped text, no broken alignment, no extra objects",
+      guidance_scale: Number(payload?.guidanceScale) || 5,
+      num_inference_steps: Number(payload?.numInferenceSteps) || 28,
     },
-    body: JSON.stringify({
-      inputs: toBase64Payload(inputImage),
-      parameters: {
-        prompt,
-        negative_prompt: payload?.negativePrompt || "do not alter layout, do not move elements, do not distort shapes, no warped text, no broken alignment, no extra objects",
-        guidance_scale: Number(payload?.guidanceScale) || 5,
-        num_inference_steps: Number(payload?.numInferenceSteps) || 28,
-        strength: Number(payload?.strength) || 0.2,
-      },
-    }),
   });
-
-  if (!response.ok) {
-    throw new Error(`${response.status} ${await response.text()}`);
-  }
 
   const buffer = Buffer.from(await response.arrayBuffer());
   return {
-    dataUrl: `data:${response.headers.get("content-type") || "image/png"};base64,${buffer.toString("base64")}`,
-    raw: { size: buffer.length, type: response.headers.get("content-type") || "image/png", mode: "image-to-image", modelId },
+    dataUrl: `data:${response.type || "image/png"};base64,${buffer.toString("base64")}`,
+    raw: { size: buffer.length, type: response.type || "image/png", mode: "image-to-image", modelId, provider: "fal-ai" },
   };
 }
 
