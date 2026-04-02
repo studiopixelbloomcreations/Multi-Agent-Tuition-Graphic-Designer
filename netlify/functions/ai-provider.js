@@ -91,6 +91,14 @@ function buildImageContentParts(prompt, imageDataUrl) {
   ];
 }
 
+function mediaDataUrlFromOptions(options = {}) {
+  const media = options?.media;
+  if (!media) return "";
+  if (typeof media === "string") return media;
+  if (typeof media?.dataUrl === "string") return media.dataUrl;
+  return "";
+}
+
 function summarizeUnknown(value) {
   if (!value) return "";
   if (typeof value === "string") return value;
@@ -145,13 +153,17 @@ function ensureConfigured(providerId, capability) {
   return config;
 }
 
-async function openrouterGenerateText(prompt) {
+async function openrouterGenerateText(prompt, options = {}) {
   const config = ensureConfigured("openrouter", "text generation");
+  const mediaDataUrl = mediaDataUrlFromOptions(options);
   const payload = await postJson(
     "https://openrouter.ai/api/v1/chat/completions",
     {
       model: config.textModel,
-      messages: [{ role: "user", content: prompt }],
+      messages: [{
+        role: "user",
+        content: mediaDataUrl ? buildImageContentParts(prompt, mediaDataUrl) : prompt,
+      }],
     },
     {
       Authorization: `Bearer ${config.apiKey}`,
@@ -228,7 +240,10 @@ async function openrouterTransformImage(payload) {
 
 async function chatProviderText(providerId, url) {
   const config = ensureConfigured(providerId, "text generation");
-  return async (prompt) => {
+  return async (prompt, options = {}) => {
+    if (options?.media) {
+      throw new Error(`${providerId} does not support image-assisted text generation.`);
+    }
     const payload = await postJson(
       url,
       {
@@ -246,7 +261,10 @@ async function chatProviderText(providerId, url) {
   };
 }
 
-async function huggingFaceGenerateText(prompt) {
+async function huggingFaceGenerateText(prompt, options = {}) {
+  if (options?.media) {
+    throw new Error("huggingface does not support image-assisted text generation in this review path.");
+  }
   const config = ensureConfigured("huggingface", "text generation");
   const payload = await postJson(
     `https://router.huggingface.co/hf-inference/models/${config.textModel}`,
@@ -320,30 +338,30 @@ async function huggingFaceTransformImage(payload) {
   };
 }
 
-async function dispatch(providerId, functionName, payload) {
+async function dispatch(providerId, functionName, payload, options = {}) {
   if (providerId === "openrouter") {
-    if (functionName === "generateText" || functionName === "detectSeason") return openrouterGenerateText(payload);
+    if (functionName === "generateText" || functionName === "detectSeason") return openrouterGenerateText(payload, options);
     if (functionName === "generateImage") return openrouterGenerateImage(payload);
     if (functionName === "transformImage") return openrouterTransformImage(payload);
   }
 
   if (providerId === "groq") {
     const fn = await chatProviderText("groq", "https://api.groq.com/openai/v1/chat/completions");
-    if (functionName === "generateText" || functionName === "detectSeason") return fn(payload);
+    if (functionName === "generateText" || functionName === "detectSeason") return fn(payload, options);
   }
 
   if (providerId === "mistral") {
     const fn = await chatProviderText("mistral", "https://api.mistral.ai/v1/chat/completions");
-    if (functionName === "generateText" || functionName === "detectSeason") return fn(payload);
+    if (functionName === "generateText" || functionName === "detectSeason") return fn(payload, options);
   }
 
   if (providerId === "deepseek") {
     const fn = await chatProviderText("deepseek", "https://api.deepseek.com/chat/completions");
-    if (functionName === "generateText" || functionName === "detectSeason") return fn(payload);
+    if (functionName === "generateText" || functionName === "detectSeason") return fn(payload, options);
   }
 
   if (providerId === "huggingface") {
-    if (functionName === "generateText" || functionName === "detectSeason") return huggingFaceGenerateText(payload);
+    if (functionName === "generateText" || functionName === "detectSeason") return huggingFaceGenerateText(payload, options);
     if (functionName === "generateImage") return huggingFaceGenerateImage(payload);
     if (functionName === "transformImage") return huggingFaceTransformImage(payload);
   }
@@ -373,12 +391,13 @@ exports.handler = async (event) => {
     const providerId = body.providerId;
     const functionName = body.functionName;
     const payload = body.payload;
+    const options = body.options || {};
 
     if (!providerId || !functionName) {
       return json(400, { ok: false, error: "providerId and functionName are required." });
     }
 
-    const result = await dispatch(providerId, functionName, payload);
+    const result = await dispatch(providerId, functionName, payload, options);
     return json(200, { ok: true, result });
   } catch (error) {
     return json(500, {

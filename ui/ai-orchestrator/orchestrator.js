@@ -53,6 +53,23 @@ function sortProvidersByPerformance(taskType, providers, performance) {
   });
 }
 
+function prioritizeMediaCapableProviders(taskType, providers, options = {}) {
+  if (!options?.providerOptions?.media) {
+    return providers;
+  }
+  if (taskType !== TASK_TYPES.promptGeneration && taskType !== TASK_TYPES.qualityEnhancement) {
+    return providers;
+  }
+  const mediaPreferred = ["openrouter"];
+  return [...providers].sort((left, right) => {
+    const leftRank = mediaPreferred.indexOf(left);
+    const rightRank = mediaPreferred.indexOf(right);
+    const normalizedLeft = leftRank === -1 ? Number.MAX_SAFE_INTEGER : leftRank;
+    const normalizedRight = rightRank === -1 ? Number.MAX_SAFE_INTEGER : rightRank;
+    return normalizedLeft - normalizedRight;
+  });
+}
+
 function emitFlow(update) {
   runtime.onFlow(update);
 }
@@ -60,7 +77,11 @@ function emitFlow(update) {
 export async function executeAgentTask(taskType, payload, options = {}) {
   const preferredProviders = TASK_PREFERENCES[taskType] || [];
   const performanceSnapshot = await loadPerformanceSnapshot();
-  const candidates = sortProvidersByPerformance(taskType, preferredProviders, performanceSnapshot)
+  const candidates = prioritizeMediaCapableProviders(
+    taskType,
+    sortProvidersByPerformance(taskType, preferredProviders, performanceSnapshot),
+    options,
+  )
     .filter((providerId) => AGENT_REGISTRY[providerId]?.tasks.includes(taskType));
 
   if (!candidates.length) {

@@ -48,6 +48,14 @@ function buildImageContentParts(prompt, imageDataUrl) {
   ];
 }
 
+function mediaDataUrlFromOptions(options = {}) {
+  const media = options?.media;
+  if (!media) return "";
+  if (typeof media === "string") return media;
+  if (typeof media?.dataUrl === "string") return media.dataUrl;
+  return "";
+}
+
 function summarizeUnknown(value) {
   if (!value) return "";
   if (typeof value === "string") return value;
@@ -168,13 +176,18 @@ function buildOpenRouter(providerId) {
   return {
     id: providerId,
 
-    async generateText(prompt) {
+    async generateText(prompt, options = {}) {
       const config = ensureConfigured(providerId, "text generation");
+      const mediaDataUrl = mediaDataUrlFromOptions(options);
+      const messages = [{
+        role: "user",
+        content: mediaDataUrl ? buildImageContentParts(prompt, mediaDataUrl) : prompt,
+      }];
       const payload = await withTimeout(postJson(
         "https://openrouter.ai/api/v1/chat/completions",
         {
           model: config.textModel,
-          messages: [{ role: "user", content: prompt }],
+          messages,
         },
         {
           Authorization: `Bearer ${config.apiKey}`,
@@ -255,8 +268,8 @@ function buildOpenRouter(providerId) {
       throw new Error(`${providerId} background analysis is not configured yet.`);
     },
 
-    async detectSeason(prompt) {
-      return this.generateText(prompt);
+    async detectSeason(prompt, options = {}) {
+      return this.generateText(prompt, options);
     },
   };
 }
@@ -265,7 +278,10 @@ function buildChatOnlyProvider(providerId, urlBuilder, bodyBuilder, headersBuild
   return {
     id: providerId,
 
-    async generateText(prompt) {
+    async generateText(prompt, options = {}) {
+      if (options?.media) {
+        throw new Error(`${providerId} does not support image-assisted text generation.`);
+      }
       const config = ensureConfigured(providerId, "text generation");
       const payload = await withTimeout(postJson(
         urlBuilder(config),
@@ -290,8 +306,8 @@ function buildChatOnlyProvider(providerId, urlBuilder, bodyBuilder, headersBuild
       throw new Error(`${providerId} background analysis is not configured yet.`);
     },
 
-    async detectSeason(prompt) {
-      return this.generateText(prompt);
+    async detectSeason(prompt, options = {}) {
+      return this.generateText(prompt, options);
     },
   };
 }
@@ -300,7 +316,10 @@ function buildHuggingFace(providerId) {
   return {
     id: providerId,
 
-    async generateText(prompt) {
+    async generateText(prompt, options = {}) {
+      if (options?.media) {
+        throw new Error(`${providerId} does not support image-assisted text generation.`);
+      }
       const config = ensureConfigured(providerId, "text generation");
       const payload = await withTimeout(postJson(
         `https://router.huggingface.co/hf-inference/models/${config.textModel}`,
@@ -387,8 +406,8 @@ function buildHuggingFace(providerId) {
       throw new Error(`${providerId} background analysis is not configured yet.`);
     },
 
-    async detectSeason(prompt) {
-      return this.generateText(prompt);
+    async detectSeason(prompt, options = {}) {
+      return this.generateText(prompt, options);
     },
   };
 }
