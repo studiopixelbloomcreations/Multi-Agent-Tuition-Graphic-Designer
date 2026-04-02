@@ -48,6 +48,12 @@ function summarizeUnknown(value) {
   }
 }
 
+function toBase64Payload(dataUrl) {
+  const text = String(dataUrl || "");
+  const marker = text.indexOf(",");
+  return marker >= 0 ? text.slice(marker + 1) : text;
+}
+
 function ensureConfigured(providerId, capability) {
   const config = getProviderSecret(providerId);
   if (!config?.apiKey) {
@@ -193,6 +199,10 @@ function buildOpenRouter(providerId) {
       return { dataUrl, raw: payload };
     },
 
+    async transformImage() {
+      throw new Error(`${providerId} image-to-image transformation is not configured yet.`);
+    },
+
     async removeBackground() {
       throw new Error(`${providerId} background analysis is not configured yet.`);
     },
@@ -222,6 +232,10 @@ function buildChatOnlyProvider(providerId, urlBuilder, bodyBuilder, headersBuild
 
     async generateImage() {
       throw new Error(`${providerId} image generation is not configured yet.`);
+    },
+
+    async transformImage() {
+      throw new Error(`${providerId} image-to-image transformation is not configured yet.`);
     },
 
     async removeBackground() {
@@ -283,6 +297,54 @@ function buildHuggingFace(providerId) {
         reader.readAsDataURL(blob);
       });
       return { dataUrl, raw: { size: blob.size, type: blob.type } };
+    },
+
+    async transformImage(payload) {
+      const config = ensureConfigured(providerId, "image-to-image transformation");
+      const inputImage = payload?.imageDataUrl || "";
+      const prompt = String(payload?.prompt || "").trim();
+      if (!inputImage) {
+        throw new Error(`${providerId} image-to-image transformation requires an input image.`);
+      }
+      const modelId = config.imageTransformModel || config.imageModel;
+      if (!modelId) {
+        throw new Error(`${providerId} image-to-image transformation is not configured yet.`);
+      }
+      const response = await withTimeout(fetch(
+        `https://router.huggingface.co/hf-inference/models/${modelId}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${config.apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            inputs: toBase64Payload(inputImage),
+            parameters: {
+              prompt,
+              negative_prompt: payload?.negativePrompt || "do not alter layout, do not move elements, do not distort shapes, no warped text, no broken alignment, no extra objects",
+              guidance_scale: Number(payload?.guidanceScale) || 5,
+              num_inference_steps: Number(payload?.numInferenceSteps) || 28,
+              strength: Number(payload?.strength) || 0.2,
+            },
+          }),
+        },
+      ), `${providerId} transformImage`);
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`${response.status} ${text}`);
+      }
+      const blob = await response.blob();
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      return {
+        dataUrl,
+        raw: { size: blob.size, type: blob.type, mode: "image-to-image", modelId },
+      };
     },
 
     async removeBackground() {
@@ -364,6 +426,9 @@ function createProxyFirstProvider(providerId) {
     },
     async generateImage(prompt, options = {}) {
       return run("generateImage", prompt, options);
+    },
+    async transformImage(payload, options = {}) {
+      return run("transformImage", payload, options);
     },
     async removeBackground(payload, options = {}) {
       return run("removeBackground", payload, options);

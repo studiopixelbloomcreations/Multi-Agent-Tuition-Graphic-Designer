@@ -269,6 +269,42 @@ export async function generatePrompt(graphic, season, referenceAnalysis) {
   return clipText(prompt, 900);
 }
 
+export async function generateSeasonalTransformationPrompt(graphic, season, referenceAnalysis) {
+  const fallbackPrompt = clipText([
+    `Transform this existing ${graphic.type} into a ${season} seasonal version.`,
+    "Preserve the exact original layout, spacing, element positions, typography zones, shape language, and composition.",
+    `Visible content to preserve exactly: ${compactJsonText(referenceAnalysis?.exactVisibleText, 260)}.`,
+    `Layout blueprint to preserve exactly: ${compactJsonText(referenceAnalysis?.layoutBlueprint, 260)}.`,
+    `Visual treatment to keep: ${compactJsonText(referenceAnalysis?.styleSummary, 180)}.`,
+    "Only adjust colors, lighting accents, seasonal decorative motifs, subtle particles, and premium surface treatment.",
+    "Keep transformation strength low. No distortion, no moved elements, no warped text, no broken alignment, no new layout, no random redesign.",
+    "Result must feel like the same professional designer created a seasonal adaptation of the same graphic.",
+  ].join(" "), 900);
+
+  try {
+    const completion = (await executeAgentTask(
+      TASK_TYPES.promptGeneration,
+      [
+        "You are the Image-to-Image Season Adaptation System prompt designer.",
+        `Graphic type: ${graphic.type}.`,
+        `Season: ${season}.`,
+        `Visible content that must remain the same: ${compactJsonText(referenceAnalysis?.exactVisibleText, 260)}.`,
+        `Layout blueprint that must remain the same: ${compactJsonText(referenceAnalysis?.layoutBlueprint, 260)}.`,
+        `Visual identity to preserve: ${compactJsonText(referenceAnalysis?.styleSummary, 180)}.`,
+        "Write one production-ready image-to-image prompt.",
+        "The prompt must insist on preserving exact structure and only adapting seasonal colors, effects, and decorative accents.",
+        "Mention low transformation strength and broadcast-quality output.",
+        "Do not return JSON. Return prompt text only.",
+      ].join(" "),
+      { taskLabel: `${graphic.label} seasonal transformation prompt` },
+    )).result;
+    const prompt = clipText(extractText(completion?.text || completion), 900);
+    return prompt || fallbackPrompt;
+  } catch {
+    return fallbackPrompt;
+  }
+}
+
 export async function generateImage(prompt, testingMode = true) {
   const image = (await executeAgentTask(
     TASK_TYPES.imageGeneration,
@@ -278,6 +314,27 @@ export async function generateImage(prompt, testingMode = true) {
   return {
     dataUrl: image?.dataUrl || "",
     modelUsed: "agent-controlled",
+  };
+}
+
+export async function transformImageToSeason(graphic, season, imageDataUrl, referenceAnalysis, testingMode = true, promptOverride = "") {
+  const prompt = promptOverride || await generateSeasonalTransformationPrompt(graphic, season, referenceAnalysis);
+  const image = (await executeAgentTask(
+    TASK_TYPES.imageTransformation,
+    {
+      prompt,
+      imageDataUrl,
+      strength: 0.2,
+      guidanceScale: 5,
+      numInferenceSteps: 28,
+      negativePrompt: "do not alter layout, do not move elements, do not distort shapes, no warped text, no broken alignment, no new content blocks, no random redesign, no artifacts",
+    },
+    { taskLabel: "image-to-image seasonal adaptation", providerOptions: { testingMode } },
+  )).result;
+  return {
+    prompt,
+    dataUrl: image?.dataUrl || "",
+    modelUsed: "agent-controlled-image-to-image",
   };
 }
 

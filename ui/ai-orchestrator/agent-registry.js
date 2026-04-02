@@ -1,6 +1,7 @@
 export const TASK_TYPES = {
   promptGeneration: "prompt-generation",
   imageGeneration: "image-generation",
+  imageTransformation: "image-transformation",
   backgroundRemoval: "background-removal",
   seasonDetection: "season-detection",
   qualityEnhancement: "quality-enhancement",
@@ -28,8 +29,8 @@ export const AGENT_REGISTRY = {
   huggingface: {
     id: "huggingface",
     label: "Hugging Face",
-    strengths: ["image generation", "background removal"],
-    tasks: [TASK_TYPES.imageGeneration, TASK_TYPES.backgroundRemoval],
+    strengths: ["image generation", "image-to-image transformation", "background removal"],
+    tasks: [TASK_TYPES.imageGeneration, TASK_TYPES.imageTransformation, TASK_TYPES.backgroundRemoval],
   },
   deepseek: {
     id: "deepseek",
@@ -42,6 +43,7 @@ export const AGENT_REGISTRY = {
 export const TASK_PREFERENCES = {
   [TASK_TYPES.promptGeneration]: ["deepseek", "groq", "mistral", "openrouter"],
   [TASK_TYPES.imageGeneration]: ["huggingface", "openrouter"],
+  [TASK_TYPES.imageTransformation]: ["huggingface"],
   [TASK_TYPES.backgroundRemoval]: ["huggingface", "openrouter"],
   [TASK_TYPES.seasonDetection]: ["mistral", "openrouter", "deepseek"],
   [TASK_TYPES.qualityEnhancement]: ["deepseek", "openrouter", "groq", "mistral"],

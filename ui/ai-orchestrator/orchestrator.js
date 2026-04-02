@@ -32,6 +32,7 @@ export function configureAIOrchestratorRuntime(overrides = {}) {
 function providerFunctionForTask(taskType) {
   if (taskType === TASK_TYPES.promptGeneration) return "generateText";
   if (taskType === TASK_TYPES.imageGeneration) return "generateImage";
+  if (taskType === TASK_TYPES.imageTransformation) return "transformImage";
   if (taskType === TASK_TYPES.backgroundRemoval) return "removeBackground";
   if (taskType === TASK_TYPES.seasonDetection) return "detectSeason";
   if (taskType === TASK_TYPES.qualityEnhancement) return "generateText";

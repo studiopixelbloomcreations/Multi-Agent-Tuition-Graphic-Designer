@@ -4,6 +4,8 @@ import {
   summarizeInspirationStyle,
   generatePrompt,
   generateImage,
+  generateSeasonalTransformationPrompt,
+  transformImageToSeason,
   reviewGeneratedGraphic,
 } from "./ai-service.js";
 import { processAllGraphics } from "./background-removal.js";
@@ -23,16 +25,36 @@ export async function generateGraphicWithQualityLoop(graphic, state, log, onEven
   onEvent?.({ kind: "style_start", graphicId: graphic.id, message: `Analyzing inspiration style for ${graphic.label}.` });
   const referenceAssets = state.graphicInspirationAssets?.[graphic.id] || [];
   const referenceAnalysis = await summarizeInspirationStyle(graphic, referenceAssets);
+  const seasonalSourceAsset = referenceAssets[0] || null;
+  const useIAS = Boolean(seasonalSourceAsset?.dataUrl || seasonalSourceAsset?.file);
   onEvent?.({ kind: "style_done", graphicId: graphic.id, message: `Style extraction ready for ${graphic.label}.`, styleSummary: referenceAnalysis });
   let lastFailure = "Generation did not complete.";
 
   for (let attempt = 1; attempt <= QUALITY_POLICY.maxAttempts; attempt += 1) {
     log(`Prompting ${graphic.label}, attempt ${attempt}/${QUALITY_POLICY.maxAttempts}.`);
-    onEvent?.({ kind: "prompt_start", graphicId: graphic.id, attempt, message: `Generating prompt for ${graphic.label}.` });
-    const prompt = await generatePrompt(graphic, state.season, referenceAnalysis);
-    onEvent?.({ kind: "prompt_done", graphicId: graphic.id, attempt, message: `Prompt ready for ${graphic.label}.`, prompt });
-    onEvent?.({ kind: "image_start", graphicId: graphic.id, attempt, message: `Generating image for ${graphic.label}.` });
-    const imageResult = await generateImage(prompt, state.testingMode);
+    let prompt = "";
+    let imageResult;
+
+    if (useIAS) {
+      onEvent?.({ kind: "prompt_start", graphicId: graphic.id, attempt, message: `Generating IAS transformation prompt for ${graphic.label}.` });
+      prompt = await generateSeasonalTransformationPrompt(graphic, state.season, referenceAnalysis);
+      onEvent?.({ kind: "prompt_done", graphicId: graphic.id, attempt, message: `IAS prompt ready for ${graphic.label}.`, prompt });
+      onEvent?.({ kind: "image_start", graphicId: graphic.id, attempt, message: `Transforming uploaded reference for ${graphic.label}.` });
+      imageResult = await transformImageToSeason(
+        graphic,
+        state.season,
+        seasonalSourceAsset.dataUrl || "",
+        referenceAnalysis,
+        state.testingMode,
+        prompt,
+      );
+    } else {
+      onEvent?.({ kind: "prompt_start", graphicId: graphic.id, attempt, message: `Generating prompt for ${graphic.label}.` });
+      prompt = await generatePrompt(graphic, state.season, referenceAnalysis);
+      onEvent?.({ kind: "prompt_done", graphicId: graphic.id, attempt, message: `Prompt ready for ${graphic.label}.`, prompt });
+      onEvent?.({ kind: "image_start", graphicId: graphic.id, attempt, message: `Generating image for ${graphic.label}.` });
+      imageResult = await generateImage(prompt, state.testingMode);
+    }
 
     if (!imageResult.dataUrl) {
       lastFailure = `No image returned for ${graphic.label}.`;
@@ -46,7 +68,7 @@ export async function generateGraphicWithQualityLoop(graphic, state, log, onEven
       imageResult.dataUrl,
       prompt,
       state.season,
-      `Raw generation output | model=${imageResult.modelUsed}${imageResult.fallbackReason ? ` | fallback=${imageResult.fallbackReason}` : ""}`,
+      `${useIAS ? "IAS raw transformation output" : "Raw generation output"} | model=${imageResult.modelUsed}${imageResult.fallbackReason ? ` | fallback=${imageResult.fallbackReason}` : ""}`,
       true,
       attempt,
       null,
@@ -65,7 +87,7 @@ export async function generateGraphicWithQualityLoop(graphic, state, log, onEven
         imageResult.dataUrl,
         prompt,
         state.season,
-        `${review.notes} | model=${imageResult.modelUsed}${imageResult.fallbackReason ? ` | fallback=${imageResult.fallbackReason}` : ""}`,
+        `${review.notes} | mode=${useIAS ? "ias" : "gcs"} | model=${imageResult.modelUsed}${imageResult.fallbackReason ? ` | fallback=${imageResult.fallbackReason}` : ""}`,
         true,
         attempt,
         review.score,

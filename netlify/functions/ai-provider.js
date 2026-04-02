@@ -2,22 +2,27 @@ const AUTO_MODELS = {
   openrouter: {
     textModel: "openai/gpt-4.1-mini",
     imageModel: "google/gemini-2.5-flash-image",
+    imageTransformModel: "",
   },
   groq: {
     textModel: "openai/gpt-oss-20b",
     imageModel: "",
+    imageTransformModel: "",
   },
   mistral: {
     textModel: "mistral-small-latest",
     imageModel: "",
+    imageTransformModel: "",
   },
   huggingface: {
     textModel: "Qwen/Qwen2.5-7B-Instruct",
     imageModel: "black-forest-labs/FLUX.1-schnell",
+    imageTransformModel: "black-forest-labs/FLUX.1-Kontext-dev",
   },
   deepseek: {
     textModel: "deepseek-chat",
     imageModel: "",
+    imageTransformModel: "",
   },
 };
 
@@ -84,6 +89,12 @@ function summarizeUnknown(value) {
   } catch {
     return String(value);
   }
+}
+
+function toBase64Payload(dataUrl) {
+  const text = String(dataUrl || "");
+  const marker = text.indexOf(",");
+  return marker >= 0 ? text.slice(marker + 1) : text;
 }
 
 async function postJson(url, body, headers = {}) {
@@ -226,6 +237,46 @@ async function huggingFaceGenerateImage(prompt) {
   };
 }
 
+async function huggingFaceTransformImage(payload) {
+  const config = ensureConfigured("huggingface", "image-to-image transformation");
+  const inputImage = payload?.imageDataUrl || "";
+  const prompt = String(payload?.prompt || "").trim();
+  if (!inputImage) {
+    throw new Error("huggingface image-to-image transformation requires an input image.");
+  }
+  const modelId = config.imageTransformModel || config.imageModel;
+  if (!modelId) {
+    throw new Error("huggingface image-to-image transformation is not configured.");
+  }
+  const response = await fetch(`https://router.huggingface.co/hf-inference/models/${modelId}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      inputs: toBase64Payload(inputImage),
+      parameters: {
+        prompt,
+        negative_prompt: payload?.negativePrompt || "do not alter layout, do not move elements, do not distort shapes, no warped text, no broken alignment, no extra objects",
+        guidance_scale: Number(payload?.guidanceScale) || 5,
+        num_inference_steps: Number(payload?.numInferenceSteps) || 28,
+        strength: Number(payload?.strength) || 0.2,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`${response.status} ${await response.text()}`);
+  }
+
+  const buffer = Buffer.from(await response.arrayBuffer());
+  return {
+    dataUrl: `data:${response.headers.get("content-type") || "image/png"};base64,${buffer.toString("base64")}`,
+    raw: { size: buffer.length, type: response.headers.get("content-type") || "image/png", mode: "image-to-image", modelId },
+  };
+}
+
 async function dispatch(providerId, functionName, payload) {
   if (providerId === "openrouter") {
     if (functionName === "generateText" || functionName === "detectSeason") return openrouterGenerateText(payload);
@@ -250,6 +301,7 @@ async function dispatch(providerId, functionName, payload) {
   if (providerId === "huggingface") {
     if (functionName === "generateText" || functionName === "detectSeason") return huggingFaceGenerateText(payload);
     if (functionName === "generateImage") return huggingFaceGenerateImage(payload);
+    if (functionName === "transformImage") return huggingFaceTransformImage(payload);
   }
 
   if (functionName === "removeBackground") {
@@ -258,6 +310,10 @@ async function dispatch(providerId, functionName, payload) {
 
   if (functionName === "generateImage") {
     throw new Error(`${providerId} image generation is not configured yet.`);
+  }
+
+  if (functionName === "transformImage") {
+    throw new Error(`${providerId} image-to-image transformation is not configured yet.`);
   }
 
   throw new Error(`Unsupported provider/function combination: ${providerId}.${functionName}`);

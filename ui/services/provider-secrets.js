@@ -5,22 +5,27 @@ const AUTO_MODELS = {
   openrouter: {
     textModel: "openai/gpt-4.1-mini",
     imageModel: "google/gemini-2.5-flash-image",
+    imageTransformModel: "",
   },
   groq: {
     textModel: "openai/gpt-oss-20b",
     imageModel: "",
+    imageTransformModel: "",
   },
   mistral: {
     textModel: "mistral-small-latest",
     imageModel: "",
+    imageTransformModel: "",
   },
   huggingface: {
     textModel: "Qwen/Qwen2.5-7B-Instruct",
     imageModel: "black-forest-labs/FLUX.1-schnell",
+    imageTransformModel: "black-forest-labs/FLUX.1-Kontext-dev",
   },
   deepseek: {
     textModel: "deepseek-chat",
     imageModel: "",
+    imageTransformModel: "",
   },
 };
 
