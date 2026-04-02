@@ -12,7 +12,7 @@ export const AGENT_REGISTRY = {
     id: "openrouter",
     label: "OpenRouter",
     strengths: ["coordination", "fallback", "general reasoning"],
-    tasks: [TASK_TYPES.promptGeneration, TASK_TYPES.seasonDetection, TASK_TYPES.qualityEnhancement, TASK_TYPES.imageGeneration],
+    tasks: [TASK_TYPES.promptGeneration, TASK_TYPES.seasonDetection, TASK_TYPES.qualityEnhancement, TASK_TYPES.imageGeneration, TASK_TYPES.imageTransformation],
   },
   groq: {
     id: "groq",
@@ -43,7 +43,7 @@ export const AGENT_REGISTRY = {
 export const TASK_PREFERENCES = {
   [TASK_TYPES.promptGeneration]: ["deepseek", "groq", "mistral", "openrouter"],
   [TASK_TYPES.imageGeneration]: ["huggingface", "openrouter"],
-  [TASK_TYPES.imageTransformation]: ["huggingface"],
+  [TASK_TYPES.imageTransformation]: ["huggingface", "openrouter"],
   [TASK_TYPES.backgroundRemoval]: ["huggingface", "openrouter"],
   [TASK_TYPES.seasonDetection]: ["mistral", "openrouter", "deepseek"],
   [TASK_TYPES.qualityEnhancement]: ["deepseek", "openrouter", "groq", "mistral"],

@@ -2,7 +2,7 @@ const AUTO_MODELS = {
   openrouter: {
     textModel: "openai/gpt-4.1-mini",
     imageModel: "google/gemini-2.5-flash-image",
-    imageTransformModel: "",
+    imageTransformModel: "google/gemini-2.5-flash-image",
   },
   groq: {
     textModel: "openai/gpt-oss-20b",
@@ -77,6 +77,18 @@ function extractOpenRouterImageDataUrl(payload) {
     || message?.content?.find?.((item) => item?.type === "image_url")?.image_url?.url
     || "";
   return image || "";
+}
+
+function buildImageContentParts(prompt, imageDataUrl) {
+  return [
+    { type: "text", text: prompt },
+    {
+      type: "image_url",
+      image_url: {
+        url: imageDataUrl,
+      },
+    },
+  ];
 }
 
 function summarizeUnknown(value) {
@@ -178,6 +190,42 @@ async function openrouterGenerateImage(prompt) {
   return { dataUrl, raw: payload };
 }
 
+async function openrouterTransformImage(payload) {
+  const config = ensureConfigured("openrouter", "image-to-image transformation");
+  const imageDataUrl = String(payload?.imageDataUrl || "").trim();
+  const prompt = String(payload?.prompt || "").trim();
+  const modelId = config.imageTransformModel || config.imageModel;
+  if (!imageDataUrl) {
+    throw new Error("openrouter image-to-image transformation requires an input image.");
+  }
+  if (!modelId) {
+    throw new Error("openrouter image-to-image transformation is not configured.");
+  }
+  const response = await postJson(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
+      model: modelId,
+      messages: [{ role: "user", content: buildImageContentParts(prompt, imageDataUrl) }],
+      modalities: ["image", "text"],
+      image_config: {
+        image_size: "1K",
+        aspect_ratio: "16:9",
+      },
+    },
+    {
+      Authorization: `Bearer ${config.apiKey}`,
+    },
+  );
+  const dataUrl = extractOpenRouterImageDataUrl(response);
+  if (!dataUrl) {
+    throw new Error("No edited image returned by openrouter.");
+  }
+  return {
+    dataUrl,
+    raw: { mode: "image-to-image", modelId, provider: "openrouter" },
+  };
+}
+
 async function chatProviderText(providerId, url) {
   const config = ensureConfigured(providerId, "text generation");
   return async (prompt) => {
@@ -276,6 +324,7 @@ async function dispatch(providerId, functionName, payload) {
   if (providerId === "openrouter") {
     if (functionName === "generateText" || functionName === "detectSeason") return openrouterGenerateText(payload);
     if (functionName === "generateImage") return openrouterGenerateImage(payload);
+    if (functionName === "transformImage") return openrouterTransformImage(payload);
   }
 
   if (providerId === "groq") {

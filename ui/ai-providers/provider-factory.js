@@ -36,6 +36,18 @@ function extractOpenRouterImageDataUrl(payload) {
   return image || "";
 }
 
+function buildImageContentParts(prompt, imageDataUrl) {
+  return [
+    { type: "text", text: prompt },
+    {
+      type: "image_url",
+      image_url: {
+        url: imageDataUrl,
+      },
+    },
+  ];
+}
+
 function summarizeUnknown(value) {
   if (!value) return "";
   if (typeof value === "string") return value;
@@ -203,7 +215,40 @@ function buildOpenRouter(providerId) {
     },
 
     async transformImage() {
-      throw new Error(`${providerId} image-to-image transformation is not configured yet.`);
+      const config = ensureConfigured(providerId, "image-to-image transformation");
+      const payload = arguments[0] || {};
+      const imageDataUrl = String(payload?.imageDataUrl || "").trim();
+      const prompt = String(payload?.prompt || "").trim();
+      const modelId = config.imageTransformModel || config.imageModel;
+      if (!imageDataUrl) {
+        throw new Error(`${providerId} image-to-image transformation requires an input image.`);
+      }
+      if (!modelId) {
+        throw new Error(`${providerId} image-to-image transformation is not configured yet.`);
+      }
+      const response = await withTimeout(postJson(
+        "https://openrouter.ai/api/v1/chat/completions",
+        {
+          model: modelId,
+          messages: [{ role: "user", content: buildImageContentParts(prompt, imageDataUrl) }],
+          modalities: ["image", "text"],
+          image_config: {
+            image_size: "1K",
+            aspect_ratio: "16:9",
+          },
+        },
+        {
+          Authorization: `Bearer ${config.apiKey}`,
+        },
+      ), `${providerId} transformImage`);
+      const dataUrl = extractOpenRouterImageDataUrl(response);
+      if (!dataUrl) {
+        throw new Error(`No edited image returned by ${providerId}.`);
+      }
+      return {
+        dataUrl,
+        raw: { mode: "image-to-image", modelId, provider: providerId },
+      };
     },
 
     async removeBackground() {

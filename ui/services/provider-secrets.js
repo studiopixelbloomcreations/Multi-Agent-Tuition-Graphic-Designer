@@ -5,7 +5,7 @@ const AUTO_MODELS = {
   openrouter: {
     textModel: "openai/gpt-4.1-mini",
     imageModel: "google/gemini-2.5-flash-image",
-    imageTransformModel: "",
+    imageTransformModel: "google/gemini-2.5-flash-image",
   },
   groq: {
     textModel: "openai/gpt-oss-20b",
